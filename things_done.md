@@ -6,19 +6,33 @@
 
 #### Step 1.1: Project Setup & Package Management
 - [x] Initialized project using `uv`.
-- [x] Configured `pyproject.toml` with core dependencies (FastAPI, SQLAlchemy 2.0, Alembic, asyncpg, etc.).
+- [x] Configured `pyproject.toml` with core dependencies (FastAPI, SQLAlchemy 2.0, Alembic, asyncpg, aiosqlite, etc.).
 - [x] Set up the entry point in `main.py`.
+
+#### Step 1.2: Infrastructure Setup
+- [x] Created local secrets file (`.env`) for DB credentials and LLM Configuration.
+- [x] Configured `core/config.py` using Pydantic BaseSettings for strong typing of environment variables.
+- [x] Configured LLM Variables: `LLM_BASE_URL` (10.10.8.200), `MODEL_NAME` (gemma-4-26b-a4b-qat), `TEMPERATURE` (0.0).
 
 #### Step 1.3: Database Modeling
 - [x] Set up SQLAlchemy 2.0 declarative base (`models/base.py`).
-- [x] Created `User` model (Authentication data) in `models/user.py`.
-- [x] Created `Workspace` model (Project container) in `models/workspace.py`.
-- [x] Created `Document` model (File tracking) in `models/document.py`.
-- [x] Created `Note` and `Tag` models with a Many-to-Many association table (`note_tags`) in `models/note.py` and `models/tag.py`.
+- [x] Created Models: `User`, `Workspace`, `Document`, `Note`, `Tag` with all relationships and foreign keys.
+- [x] Configured Many-to-Many association table (`note_tags`).
 - [x] Centralized imports in `models/__init__.py`.
-- [x] Defined all relationships with `cascade="all, delete-orphan"` where appropriate.
 
-## Configuration Details Noted
-- **LLM_BASE_URL**: `http://10.10.8.200:5000/v1`
-- **MODEL_NAME**: `google/gemma-4-26b-a4b-qat`
-- **TEMPERATURE**: `0`
+#### Step 1.4: Database Engine & Migrations
+- [x] Created Async DB Engine and session maker in `core/database.py`.
+- [x] Initialized Alembic (`alembic init -t async`).
+- [x] Configured `alembic/env.py` to pull metadata and DB URL from application settings.
+- [x] Successfully generated first migration: `alembic revision --autogenerate -m "initial_schema"`.
+- [x] Applied migration to create local database: `alembic upgrade head`.
+
+## Challenges & Solutions
+
+### 1. Database Migration Blocker (Docker/Podman Issue)
+**Problem:** We initially attempted to use PostgreSQL via Docker for local development. However, the local container environment (Podman masquerading as Docker) failed to start the `docker-compose.yml` stack due to a daemon connection error (`Not supported URL scheme http+docker`). This blocked Alembic from connecting to the database, which is required to auto-generate the initial SQL schemas from our Python models.
+
+**Solution:** Rather than spending time fighting the local container daemon configuration, we pivoted to using **SQLite** for local development. 
+- Installed the async SQLite driver (`uv add aiosqlite`).
+- Updated the `DATABASE_URL` in `.env` and `core/config.py` to point to a local file (`sqlite+aiosqlite:///./ai_research.db`).
+- This completely removed the dependency on external servers or Docker, allowing Alembic to successfully generate the migration and build the database file locally.

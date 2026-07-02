@@ -2,7 +2,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
     # Database
-    DATABASE_URL: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/ai_research"
+    DATABASE_URL: str = "sqlite+aiosqlite:///./ai_research.db"
     
     # Security
     JWT_SECRET: str = "change_me_in_production"
