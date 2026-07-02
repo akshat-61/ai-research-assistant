@@ -1,0 +1,193 @@
+================================================================================
+AI RESEARCH ASSISTANT - MASTER PROJECT PLAN & EXECUTION GUIDE
+================================================================================
+
+This document is your end-to-end blueprint for building a production-grade 
+AI Research Assistant (combining features of NotebookLM, Perplexity, and 
+ChatGPT Projects). It is broken down into 6 Phases, from foundational backend 
+architecture to advanced agentic workflows and final deployment.
+
+================================================================================
+PHASE 1: BACKEND FOUNDATIONS (CRUD & AUTH)
+================================================================================
+Goal: Build a robust, scalable, async Python backend using FastAPI and Postgres.
+
+Step 1.1: Project Setup & Package Management
+- Initialize the project using `uv init ai-research-assistant`.
+- Install dependencies: fastapi, uvicorn, sqlalchemy, asyncpg, alembic, 
+  pydantic-settings, passlib[bcrypt], pyjwt, pytest, etc.
+- Set up project structure: /app, /app/api, /app/models, /app/schemas, /app/core.
+
+Step 1.2: Infrastructure Setup
+- Create `docker-compose.yml` for PostgreSQL (port 5432) and pgAdmin.
+- Setup `.env` for local secrets (DB credentials, JWT Secret).
+- Create `app/core/config.py` using Pydantic BaseSettings to validate env vars.
+
+Step 1.3: Database Modeling (SQLAlchemy 2.0)
+- Define `Base` and `TimestampMixin` in `models/base.py`.
+- Define `User` model (auth details).
+- Define `Workspace` model (projects).
+- Define `Document` model (file tracking, S3 path, status enum).
+- Define `Note` and `Tag` models with Many-to-Many association table.
+- Centralize imports in `models/__init__.py`.
+
+Step 1.4: Database Engine & Migrations
+- Create async database engine & session maker in `core/database.py`.
+- Initialize Alembic (`uv run alembic init -t async alembic`).
+- Configure `env.py` in Alembic to load the async URL from Pydantic config.
+- Generate and run the first migration (`001_initial_schema.py`).
+
+Step 1.5: Pydantic Schemas (Data Validation)
+- Create `UserCreate`, `UserResponse` schemas.
+- Create Workspace, Document, Note, and Tag schemas.
+- Ensure `from_attributes=True` is enabled on Response schemas.
+
+Step 1.6: Security & Authentication Layer
+- Implement password hashing (bcrypt) in `core/security.py`.
+- Implement JWT generation and validation logic.
+- Create OAuth2PasswordBearer dependency (`get_current_user`).
+
+Step 1.7: API Routing & Controllers
+- Build `/auth/register` and `/auth/login` endpoints.
+- Build Workspace CRUD (`/workspaces`).
+- Build Document Metadata CRUD (`/workspaces/{id}/documents`).
+- Build Notes & Tags CRUD.
+- Register all routers in `main.py`.
+
+Step 1.8: Unit & Integration Testing
+- Setup `pytest` with `pytest-asyncio` and `httpx`.
+- Write tests for user registration and JWT retrieval.
+- Write tests for Workspace creation using auth dependencies.
+
+================================================================================
+PHASE 2: AI INTEGRATION (THE BASICS)
+================================================================================
+Goal: Ingest documents, extract text, chunk, embed, and answer basic queries.
+
+Step 2.1: File Upload System
+- Modify the Document endpoint to accept `UploadFile` (multipart/form-data).
+- Save files locally (temporarily) or push to an S3-compatible storage (MinIO).
+- Update database Document status to 'uploaded'.
+
+Step 2.2: Document Parsing
+- Integrate parsers (e.g., PyMuPDF, Docling, or Unstructured.io).
+- Write a service pipeline: PDF -> Raw Text / Markdown.
+
+Step 2.3: Chunking Strategy
+- Implement LangChain or LlamaIndex RecursiveCharacterTextSplitter.
+- Experiment with Markdown header splitting for better context boundaries.
+- Ensure chunks retain metadata (page number, document_id, workspace_id).
+
+Step 2.4: Embedding Generation
+- Integrate OpenAI (`text-embedding-3-small`) or local Ollama (`nomic-embed-text`).
+- Write an async function to convert text chunks into vector embeddings.
+
+Step 2.5: Basic LLM Answering
+- Setup LLM clients (OpenAI, Gemini, Ollama API).
+- Create a basic `/chat` endpoint that takes a user query, a hardcoded context, 
+  and returns an AI-generated response.
+
+================================================================================
+PHASE 3: PRODUCTION RAG (RETRIEVAL-AUGMENTED GENERATION)
+================================================================================
+Goal: Move from toy AI to a production-grade, highly accurate search engine.
+
+Step 3.1: Vector Database Integration
+- Choose pgvector (Postgres extension), Qdrant, or ChromaDB.
+- Set up the Vector DB in `docker-compose.yml` (if using Qdrant/Chroma).
+- Create database models for chunks and vectors.
+
+Step 3.2: Hybrid Search Pipeline
+- Implement dense retrieval (Vector search via Cosine Similarity).
+- Implement sparse retrieval (BM25 or full-text search).
+- Combine scores using Reciprocal Rank Fusion (RRF).
+
+Step 3.3: Metadata Filtering (Crucial for Security)
+- Modify the retrieval logic to *always* filter by `workspace_id`.
+- Add optional filters for `tags` or `document_id`.
+
+Step 3.4: The RAG Endpoint & Citations
+- Build the core `/workspaces/{id}/ask` endpoint.
+- Step A: Embed user query.
+- Step B: Retrieve top-K chunks via Hybrid Search.
+- Step C: Inject chunks into Prompt Template.
+- Step D: Instruct LLM to generate response AND output citations (mapping claims 
+  to specific chunk metadata / page numbers).
+
+================================================================================
+PHASE 4: AGENTIC AI (LANGGRAPH)
+================================================================================
+Goal: Upgrade from a single RAG call to multi-step reasoning agents.
+
+Step 4.1: LangGraph Foundation
+- Install LangGraph.
+- Define State schema (User Query, Plan, Retrieved Docs, Draft, Final Output).
+
+Step 4.2: Tool Calling
+- Wrap your Hybrid Search function into an LLM Tool.
+- Wrap a Web Search function (Tavily/DuckDuckGo) into an LLM Tool.
+
+Step 4.3: Building the Agents
+- Planning Agent: Breaks user question into sub-queries.
+- Retrieval Agent: Uses tools to fetch data from Vector DB or Web.
+- Verification Agent: Checks if retrieved data actually answers the prompt. If not, 
+  it commands the Retrieval Agent to search again.
+- Writer Agent: Compiles the verified information into a cohesive report.
+
+Step 4.4: Streaming Responses (SSE)
+- Implement Server-Sent Events (SSE) in FastAPI.
+- Stream agent thought processes (e.g., "Agent is planning...", "Agent is 
+  retrieving document X...") to the client in real-time.
+
+================================================================================
+PHASE 5: PRODUCTION OPERATIONS (DAY 2)
+================================================================================
+Goal: Ensure the system doesn't crash under load and provides observability.
+
+Step 5.1: Redis & Background Tasks (Celery)
+- Add Redis to `docker-compose.yml`.
+- Set up Celery (or ARQ/FastStream).
+- Move document parsing, chunking, and embedding into async Celery workers 
+  so the API responds immediately when a file is uploaded.
+
+Step 5.2: Rate Limiting
+- Implement Redis-based rate limiting on the API to prevent abuse (e.g., 
+  max 50 queries per minute per user).
+
+Step 5.3: Caching
+- Implement semantic caching (e.g., if User asks the exact same question twice, 
+  return the cached response instead of calling the LLM again).
+
+Step 5.4: Observability & Logging
+- Set up structured JSON logging.
+- Integrate OpenTelemetry (or basic LangSmith) to trace LLM latency, token 
+  usage, and step-by-step agent execution.
+
+================================================================================
+PHASE 6: DEVOPS & DEPLOYMENT
+================================================================================
+Goal: Get the application on the internet safely and professionally.
+
+Step 6.1: Dockerization
+- Write multi-stage `Dockerfile` for the FastAPI backend.
+- Write `Dockerfile` for the Celery workers.
+- Finalize `docker-compose.prod.yml` (excluding local dev tools).
+
+Step 6.2: CI/CD Pipelines
+- Create `.github/workflows/ci.yml`.
+- Add jobs for: ruff (linting), mypy (typing), and pytest (testing).
+- Enforce that pull requests cannot be merged unless CI passes.
+
+Step 6.3: Cloud Infrastructure Provisioning
+- Set up an AWS EC2 instance or ECS cluster (or DigitalOcean Droplet).
+- Configure a managed PostgreSQL database (RDS).
+
+Step 6.4: Reverse Proxy & SSL
+- Set up Nginx as a reverse proxy to route traffic to the FastAPI app.
+- Configure Let's Encrypt / Certbot for HTTPS/SSL.
+
+================================================================================
+CONCLUSION & PORTFOLIO IMPACT
+By following this step-by-step guide, you will have built a system that 
+showcases deep knowledge of backend architecture, database design, asynchronous 
+task queues, vector mathematics, LLM orchestration, and modern DevOps.
