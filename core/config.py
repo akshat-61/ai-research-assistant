@@ -5,7 +5,7 @@ class Settings(BaseSettings):
     DATABASE_URL: str = "sqlite+aiosqlite:///./ai_research.db"
     
     # Security
-    JWT_SECRET: str = "change_me_in_production"
+    JWT_SECRET: str = "jwt_secret_key_for_python_fastapi"
     
     # LLM Configuration
     LLM_BASE_URL: str = "http://10.10.8.200:5000/v1"
