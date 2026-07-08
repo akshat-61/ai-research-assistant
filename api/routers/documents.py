@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, status, Path
+from fastapi import APIRouter, HTTPException, status
 from sqlalchemy import select
 
 from api.deps import SessionDep, CurrentUser

@@ -1,6 +1,5 @@
 from fastapi import APIRouter, HTTPException, status
 from sqlalchemy import select
-from sqlalchemy.orm import selectinload
 
 from api.deps import SessionDep, CurrentUser
 from models.workspace import Workspace

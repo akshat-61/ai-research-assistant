@@ -6,7 +6,7 @@ from api.deps import SessionDep, CurrentUser
 from models.workspace import Workspace
 from models.note import Note
 from models.tag import Tag
-from schemas.note import NoteCreate, NoteUpdate, NoteResponse
+from schemas.note import NoteCreate, NoteResponse
 
 router = APIRouter(prefix="/workspaces/{workspace_id}/notes", tags=["notes"])
 
