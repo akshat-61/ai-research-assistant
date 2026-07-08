@@ -49,6 +49,14 @@
 - [x] Downgraded `bcrypt` to `4.0.1` to resolve passlib 72-byte string hash bug during testing.
 - [x] Tests pass successfully.
 
+### Phase 2: AI Integration (The Basics)
+
+#### Step 2.1: File Upload System
+- [x] Modified the Document endpoint to accept `UploadFile` (multipart/form-data).
+- [x] Implemented logic to save files locally in an `uploads/` directory with unique UUID filenames.
+- [x] Updated database Document status to 'uploaded'.
+- [x] Wrote and successfully passed tests for the document upload functionality.
+
 ## Challenges & Solutions
 
 ### 1. Database Migration Blocker (Docker/Podman Issue)

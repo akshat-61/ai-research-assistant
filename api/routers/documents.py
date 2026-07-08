@@ -1,10 +1,16 @@
-from fastapi import APIRouter, HTTPException, status
+import os
+import shutil
+import uuid
+from fastapi import APIRouter, HTTPException, status, UploadFile, File
 from sqlalchemy import select
 
 from api.deps import SessionDep, CurrentUser
 from models.workspace import Workspace
 from models.document import Document
-from schemas.document import DocumentCreate, DocumentResponse
+from schemas.document import DocumentResponse
+
+UPLOAD_DIR = "uploads"
+os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 router = APIRouter(prefix="/workspaces/{workspace_id}/documents", tags=["documents"])
 
@@ -18,11 +24,26 @@ async def check_workspace_access(workspace_id: int, session: SessionDep, user_id
 
 @router.post("/", response_model=DocumentResponse, status_code=status.HTTP_201_CREATED)
 async def create_document(
-    workspace_id: int, document_in: DocumentCreate, session: SessionDep, current_user: CurrentUser
+    workspace_id: int, session: SessionDep, current_user: CurrentUser, file: UploadFile = File(...)
 ):
     await check_workspace_access(workspace_id, session, current_user.id)
     
-    document = Document(**document_in.model_dump(), workspace_id=workspace_id)
+    if not file.filename:
+        raise HTTPException(status_code=400, detail="No filename provided")
+
+    file_extension = os.path.splitext(file.filename)[1]
+    unique_filename = f"{uuid.uuid4()}{file_extension}"
+    file_path = os.path.join(UPLOAD_DIR, unique_filename)
+    
+    with open(file_path, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+    
+    document = Document(
+        filename=file.filename,
+        file_path=file_path,
+        status="uploaded",
+        workspace_id=workspace_id
+    )
     session.add(document)
     await session.commit()
     await session.refresh(document)
