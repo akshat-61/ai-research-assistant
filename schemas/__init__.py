@@ -3,3 +3,4 @@ from .workspace import WorkspaceCreate, WorkspaceUpdate, WorkspaceResponse
 from .document import DocumentCreate, DocumentResponse
 from .tag import TagCreate, TagResponse
 from .note import NoteCreate, NoteUpdate, NoteResponse
+from .chat import ChatRequest, ChatResponse

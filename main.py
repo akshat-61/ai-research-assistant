@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from api.routers import auth, workspaces, documents, notes, tags
+from api.routers import auth, workspaces, documents, notes, tags, chat
 
 app = FastAPI(
     title="AI Research Assistant",
@@ -23,6 +23,7 @@ app.include_router(workspaces.router, prefix="/api")
 app.include_router(documents.router, prefix="/api")
 app.include_router(notes.router, prefix="/api")
 app.include_router(tags.router, prefix="/api")
+app.include_router(chat.router, prefix="/api")
 
 @app.get("/")
 def root():

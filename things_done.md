@@ -57,6 +57,30 @@
 - [x] Updated database Document status to 'uploaded'.
 - [x] Wrote and successfully passed tests for the document upload functionality.
 
+#### Step 2.2: Document Parsing
+- [x] Integrated `pymupdf4llm` to extract highly accurate Markdown from PDFs.
+- [x] Built the parsing service pipeline (`services/parser.py`) to convert files to Markdown text.
+- [x] Wrote tests for the parsing service generating and parsing a dummy PDF programmatically.
+
+#### Step 2.3: Chunking Strategy
+- [x] Integrated `langchain-text-splitters`.
+- [x] Created `services/chunker.py` using `MarkdownHeaderTextSplitter` and `RecursiveCharacterTextSplitter`.
+- [x] Preserved and appended metadata (like `document_id`, `workspace_id`, and `chunk_index`) to each chunk.
+- [x] Wrote and passed tests for the chunking service.
+
+#### Step 2.4: Embedding Generation
+- [x] Integrated `openai` package for compatibility with local LLM APIs.
+- [x] Added `EMBEDDING_MODEL` (`nomic-embed-text`) to Pydantic Settings.
+- [x] Created `services/embeddings.py` featuring an async function to convert text chunks into vector embeddings via the local inference server.
+- [x] Wrote mock tests for the embeddings service using `unittest.mock`.
+
+#### Step 2.5: Basic LLM Answering
+- [x] Created `schemas/chat.py` with Pydantic request/response models.
+- [x] Wrote `services/llm.py` to communicate asynchronously with the local LLM using `AsyncOpenAI`.
+- [x] Developed the `/chat` endpoint inside `api/routers/chat.py` handling queries with a hardcoded context.
+- [x] Wrote tests mocking `openai.chat.completions.create` to verify API outputs seamlessly.
+- [x] Phase 2 completed successfully.
+
 ## Challenges & Solutions
 
 ### 1. Database Migration Blocker (Docker/Podman Issue)
