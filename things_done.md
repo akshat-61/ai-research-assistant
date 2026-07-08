@@ -27,6 +27,28 @@
 - [x] Successfully generated first migration: `alembic revision --autogenerate -m "initial_schema"`.
 - [x] Applied migration to create local database: `alembic upgrade head`.
 
+#### Step 1.5: Pydantic Schemas (Data Validation)
+- [x] Created Base, Create, Update, and Response schemas for User, Workspace, Document, Note, and Tag.
+- [x] Enabled `from_attributes=True` for Response schemas.
+
+#### Step 1.6: Security & Authentication Layer
+- [x] Implemented password hashing (bcrypt) and JWT functions in `core/security.py`.
+- [x] Created `get_current_user` OAuth2 dependency in `api/deps.py`.
+
+#### Step 1.7: API Routing & Controllers
+- [x] Built Auth router (`/auth/register`, `/auth/login`, `/auth/me`).
+- [x] Built Workspaces CRUD router.
+- [x] Built sub-routers for Documents, Notes, and Tags linked to a workspace.
+- [x] Rewrote `main.py` to instantiate FastAPI and include all routers.
+
+#### Step 1.8: Unit & Integration Testing
+- [x] Set up `pytest` with `pytest-asyncio` and `httpx`.
+- [x] Configured `conftest.py` for async in-memory SQLite database (`sqlite+aiosqlite:///:memory:`).
+- [x] Wrote tests for user registration, duplicate prevention, and JWT login.
+- [x] Wrote tests for Workspace creation and retrieval using auth headers.
+- [x] Downgraded `bcrypt` to `4.0.1` to resolve passlib 72-byte string hash bug during testing.
+- [x] Tests pass successfully.
+
 ## Challenges & Solutions
 
 ### 1. Database Migration Blocker (Docker/Podman Issue)
