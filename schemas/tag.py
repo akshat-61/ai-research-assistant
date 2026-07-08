@@ -6,7 +6,7 @@ class TagBase(BaseModel):
 
 
 class TagCreate(TagBase):
-    workspace_id: int
+    pass
 
 
 class TagResponse(TagBase):

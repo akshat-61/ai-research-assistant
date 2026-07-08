@@ -6,7 +6,7 @@ from api.deps import SessionDep, CurrentUser
 from models.workspace import Workspace
 from models.note import Note
 from models.tag import Tag
-from schemas.note import NoteCreate, NoteResponse
+from schemas.note import NoteCreate, NoteResponse, NoteUpdate
 
 router = APIRouter(prefix="/workspaces/{workspace_id}/notes", tags=["notes"])
 
@@ -61,6 +61,30 @@ async def read_note(
     note = result.scalar_one_or_none()
     if not note:
         raise HTTPException(status_code=404, detail="Note not found")
+    return note
+
+@router.put("/{note_id}", response_model=NoteResponse)
+async def update_note(
+    workspace_id: int, note_id: int, note_in: NoteUpdate, session: SessionDep, current_user: CurrentUser
+):
+    await check_workspace_access(workspace_id, session, current_user.id)
+    query = select(Note).options(selectinload(Note.tags)).where(Note.id == note_id, Note.workspace_id == workspace_id)
+    result = await session.execute(query)
+    note = result.scalar_one_or_none()
+    if not note:
+        raise HTTPException(status_code=404, detail="Note not found")
+        
+    update_data = note_in.model_dump(exclude_unset=True, exclude={"tag_ids"})
+    for field, value in update_data.items():
+        setattr(note, field, value)
+        
+    if note_in.tag_ids is not None:
+        query_tags = select(Tag).where(Tag.id.in_(note_in.tag_ids), Tag.workspace_id == workspace_id)
+        result_tags = await session.execute(query_tags)
+        note.tags = result_tags.scalars().all()
+        
+    await session.commit()
+    await session.refresh(note)
     return note
 
 @router.delete("/{note_id}", status_code=status.HTTP_204_NO_CONTENT)

@@ -49,3 +49,25 @@ async def test_upload_document(async_client: AsyncClient):
     )
     assert get_response.status_code == 200
     assert get_response.json()["filename"] == "test_doc.txt"
+    
+    # Verify list
+    list_response = await async_client.get(
+        f"/api/workspaces/{workspace_id}/documents/",
+        headers=headers
+    )
+    assert list_response.status_code == 200
+    assert len(list_response.json()) == 1
+    
+    # Delete document
+    delete_response = await async_client.delete(
+        f"/api/workspaces/{workspace_id}/documents/{doc_id}",
+        headers=headers
+    )
+    assert delete_response.status_code == 204
+    
+    # Verify deletion
+    verify_del = await async_client.get(
+        f"/api/workspaces/{workspace_id}/documents/{doc_id}",
+        headers=headers
+    )
+    assert verify_del.status_code == 404

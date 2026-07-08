@@ -9,7 +9,6 @@ class NoteBase(BaseModel):
 
 
 class NoteCreate(NoteBase):
-    workspace_id: int
     tag_ids: Optional[list[int]] = []
 
 
