@@ -1,3 +1,4 @@
+import asyncio
 from datetime import timedelta
 from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -14,7 +15,7 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 
 @router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 async def register_user(user_in: UserCreate, session: SessionDep):
-    hashed_password = get_password_hash(user_in.password)
+    hashed_password = await asyncio.to_thread(get_password_hash, user_in.password)
     user = User(email=user_in.email, hashed_password=hashed_password)
     session.add(user)
     try:
@@ -34,7 +35,12 @@ async def login_access_token(
 ):
     result = await session.execute(select(User).where(User.email == form_data.username))
     user = result.scalar_one_or_none()
-    if not user or not verify_password(form_data.password, user.hashed_password):
+    
+    if not user:
+        raise HTTPException(status_code=400, detail="Incorrect email or password")
+        
+    is_valid = await asyncio.to_thread(verify_password, form_data.password, user.hashed_password)
+    if not is_valid:
         raise HTTPException(status_code=400, detail="Incorrect email or password")
     elif not user.is_active:
         raise HTTPException(status_code=400, detail="Inactive user")

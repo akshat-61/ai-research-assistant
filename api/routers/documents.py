@@ -1,6 +1,6 @@
 import os
-import shutil
 import uuid
+import aiofiles
 from fastapi import APIRouter, HTTPException, status, UploadFile, File
 from sqlalchemy import select
 
@@ -35,8 +35,9 @@ async def create_document(
     unique_filename = f"{uuid.uuid4()}{file_extension}"
     file_path = os.path.join(UPLOAD_DIR, unique_filename)
     
-    with open(file_path, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
+    async with aiofiles.open(file_path, "wb") as out_file:
+        while content := await file.read(1024 * 1024):  # 1MB chunks
+            await out_file.write(content)
     
     document = Document(
         filename=file.filename,
